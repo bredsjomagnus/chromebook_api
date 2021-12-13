@@ -1,31 +1,51 @@
 from __future__ import print_function
 import pickle
 import os.path
+from query_dict import *
+from Device import *
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import datetime
 from termcolor import cprint
 
-SCOPES = ["https://www.googleapis.com/auth/admin.directory.device.chromeos.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/admin.directory.device.chromeos"]
+
+device_list = []
+UPDATE_INFO = """
+    UPPDATERINGSNYCKLAR
+    - "user"
+    - "location"
+    - "asset_id"
+"""
 
 
-def get_devices(service_device, nextPageToken, maxResults, days_back=2):
+def get_devices(service_device, query="status:provisioned", nextPageToken=None, maxResults=200):
     """
     - Hämtar lista med alla enheter som stämmer in på query.
     - query är alla aktiva och som synkroneserats senast query_date
     - return resultat dictionary och senast synkroniserad från datumnet
     """
-    tod = datetime.datetime.now()
-    d = datetime.timedelta(days=days_back)
-    a = tod - d
-    query_date = a.strftime("%Y-%m-%d")
-    # query = "user: magnus.andersson@edu.hellefors.se"
-    query = "status:provisioned sync:"+query_date+".."
     return service_device.chromeosdevices().list(customerId="my_customer", query=query, pageToken=nextPageToken, orgUnitPath="Grundskola", maxResults=maxResults).execute(), query
 
 
-def extract_devices(res):
+def update_devices(service_device, device_list, update_key, update_value):
+
+    body = {
+        query_dict[update_key]: update_value
+    }
+
+    print(f"update: {body}")
+
+    print()
+
+    for d in device_list:
+        print(d.get_device_id())
+        print(
+            f"{d.get_value('annotatedAssetId')} - {query_dict[update_key]}: {d.get_value(query_dict[update_key])} \t -> \t {update_value}")
+        service_device.chromeosdevices().update(customerId="my_customer", deviceId=d.get_device_id(), body=body).execute()
+
+def extract_devices(res, query_key, query_value):
     """
     - Skannar av listan med enheterna i dict res.
     - De som har en annan wanIpAddress än som innehåller 195.34.84 samlas data på
@@ -33,7 +53,7 @@ def extract_devices(res):
     - Returnerar total antalet enheter i dict res och totala antalet träffar i dict res.
     """
     devices = res.get("chromeosdevices", [])
-    nc = 0
+    device_list = []
 
     for device in devices:
         catched = False
@@ -43,10 +63,17 @@ def extract_devices(res):
         recentUser = "SAKNAS"
         wanIp = ""
         lastActivity = 'SAKNAS'
+        search_value = ""
+        location = "SAKNAS"
+        deviceId = False
 
         for i, (k, v) in enumerate(device.items()):
+            
             try:
                 # print(f'{i} - {k}: {v}')
+
+                if k == 'deviceId':
+                    deviceId = v
 
                 if k == 'activeTimeRanges':
                     lastActivity = v[-1]['date']
@@ -62,11 +89,19 @@ def extract_devices(res):
 
                 if k == 'annotatedAssetId':
                     resursId = v
-
+                
                 if k == 'lastKnownNetwork':
-                    if '195.34.84' not in v[0]['wanIpAddress']:
-                        wanIp = v[0]['wanIpAddress']
-                        catched = True
+                    wanIp = v[0]['wanIpAddress']
+                
+                if k == 'annotatedLocation':
+                    location = v
+
+                if k == query_dict[query_key]:
+                    print(query_dict[query_key])
+                    search_value = v
+
+                
+                         
             except Exception as error:
                 # print(error)
                 if isinstance(v, dict):
@@ -74,21 +109,39 @@ def extract_devices(res):
                     for vk, vv in v.items():
                         # print(vv.encode("utf-8"))
                         pass
-
-        if catched:
-            nc = nc + 1
+        
+        if deviceId:
+            d_inst = Device(device)
+            device_list.append(d_inst)
             print()
+            print(f"{query_key}: ", end="")
+            cprint(f"{search_value}", 'yellow')
             print('Resurs-ID: ', end="")
             cprint(f'{resursId}', 'red', 'on_white')
             cprint(f'Senaste användare: {recentUser}', 'yellow')
             print(f'Serienummer: {serialNumber}')
+            print(f"Plats: {location}")
             print(f'Senaste aktivitet: {lastActivity}')
             print(f'Senaste synk: {lastSync}')
             cprint(f'IP-adress: {wanIp}', 'magenta')
             print()
-            catched = False
 
-    return len(devices), nc
+        
+
+        # if catched:
+        #     nc = nc + 1
+        #     print()
+        #     print('Resurs-ID: ', end="")
+        #     cprint(f'{resursId}', 'red', 'on_white')
+        #     cprint(f'Senaste användare: {recentUser}', 'yellow')
+        #     print(f'Serienummer: {serialNumber}')
+        #     print(f'Senaste aktivitet: {lastActivity}')
+        #     print(f'Senaste synk: {lastSync}')
+        #     cprint(f'IP-adress: {wanIp}', 'magenta')
+        #     print()
+        #     catched = False
+
+    return device_list
 
 
 def get_device_service():
@@ -117,25 +170,108 @@ def get_device_service():
     service = build('admin', 'directory_v1', credentials=creds)
     return service
 
+def main():
 
-service_device = get_device_service()
+    service_device = get_device_service()
 
-days_back = 3
-res, query = get_devices(service_device, None, 200, days_back)
-nd, nc = extract_devices(res)
+    print("MÖJLIGA SÖKNYCKLAR")
+    cprint("""
+    "user": "",
+    "location": "",
+    "orgPathUnit": "",
+    "asset_id": "",
+    "sync": "",
+    "register": "",
+    "note": "",
+    "recent_user": "",
+    "id": "",           # device-id
+    "ethernet_mac": "",
+    "status": "",       # provisioned, disabled, deprovisioned
+    "wifi_mac": ""
+""", 'yellow')
+    query_key = input("Ange söknyckel: ")
 
-total_nd = nd
-catched_d = nc
+    print("\n Söker på ", end="")
+    cprint(f'[{query_key.upper()}]', 'yellow', end=" ")
+    query_value = input("Sökvärde: ")
 
-while nd == 200:
-    res, query = get_devices(
-        service_device, res['nextPageToken'], 200, days_back)
-    nd, nc = extract_devices(res)
-    total_nd = total_nd + nd
-    catched_d = catched_d + nc
+    print()
+    
+    cprint(f'[{query_key}:{query_value}]', 'yellow')
 
-print()
-print("QUERY: ", end="")
-cprint(f"[{query}]", 'green')
-print("ANTAL/TRÄFFAR: ", end="")
-cprint(f'{total_nd} st/{catched_d} st', 'green')
+    query = query_key + ":" +query_value
+
+    res, query = get_devices(service_device, query)
+    device_list = extract_devices(res, query_key, query_value)
+
+    # while nd == 200:
+    #     res, query = get_devices(
+    #         service_device, query, res['nextPageToken'], days_back)
+    #     nd, nc = extract_devices(res)
+    #     total_nd = total_nd + nd
+    #     catched_d = catched_d + nc
+
+    print()
+    print("QUERY: ", end="")
+    cprint(f"[{query}]", 'green')
+    print("ANTAL: ", end="")
+    cprint(f'{len(device_list)} st', 'green')
+
+    print()
+
+    update_key = ""
+    update_value = ""
+
+    valid_update_keys = ['user', 'location', 'asset_id']
+
+    if len(device_list):
+    
+        update = "unknown"
+        while update != 'j' and update != 'n':
+            update = input("Uppdatera dessa enheter? [j/n]")
+            if update == 'j':
+                cprint(UPDATE_INFO, "yellow")
+                
+                update_key = 'unknown'
+
+                while not update_key in valid_update_keys:
+
+                    update_key = input("Vad vill du uppdatera? [exit] ")
+
+                    if update_key == 'exit':
+                        print("Hej då!")
+                        exit()
+                        
+
+                print("\nUppdatera ", end="")
+                cprint(f'[{update_key.upper()}]', 'yellow', end=" ")
+                update_value = input("Nytt värde: ")
+
+                print()
+                
+                print("############################################################################################")
+                print(f"Uppdatera {len(device_list)} st enheter:")
+                print("KEY \t nuvarand värde \t -> \t nytt värde")
+                cprint(f'[{update_key.upper()}: {device_list[0].get_value(query_dict[update_key])} \t -> \t {update_value}]', 'yellow')
+                # cprint(f'[{update_key.upper()}: {query_value} t -> \t {update_value}]', 'yellow')
+                print("############################################################################################")
+
+                update_verification = "unknown"
+                while update_verification != 'j' and update_verification != 'n':
+                    update_verification = input("Är du säker på att du vill uföra denna uppdatering? [j/n]")
+                    if update_verification == 'j':
+                        update_devices(service_device, device_list, update_key, update_value)
+                    elif update_verification == 'n':
+                        print("\nUppdatering utfördes inte!")
+                        print("Hej då!")
+                        exit()
+
+            elif update == 'n':
+                print("Hej då!")
+                exit()
+                
+
+    
+
+if __name__ == '__main__':
+    main()

@@ -1,14 +1,14 @@
 query_dict = {
-    "user": "",
-    "location": "",
+    "user": "annotatedUser",
+    "location": "annotatedLocation",
     "orgPathUnit": "",
-    "asset_id": "",
-    "sync": "",
+    "asset_id": "annotatedAssetId",
+    "sync": "lastSync",
     "register": "",
-    "note": "",
+    "note": "notes",
     "recent_user": "",
-    "id": "",
+    "id": "deviceId",
     "ethernet_mac": "",
-    "status": "",       # provisioned, disabled, deprovisioned
+    "status": "status",       # provisioned, disabled, deprovisioned
     "wifi_mac": ""
 }
