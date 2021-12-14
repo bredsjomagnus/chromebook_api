@@ -67,10 +67,11 @@ def extract_devices(res, query_key, query_value):
         location = "SAKNAS"
         deviceId = False
 
+
         for i, (k, v) in enumerate(device.items()):
             
             try:
-                # print(f'{i} - {k}: {v}')
+                print(f'{i} - {k}: {v}')
 
                 if k == 'deviceId':
                     deviceId = v

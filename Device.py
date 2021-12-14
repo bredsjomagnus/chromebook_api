@@ -9,4 +9,4 @@ class Device():
         return self.obj["serialNumber"]
 
     def get_value(self, key):
-        return self.obj[key]
+        return self.obj.get(key, 'SAKNAS')
