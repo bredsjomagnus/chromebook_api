@@ -26,7 +26,7 @@ def get_devices(service_device, query="status:provisioned", nextPageToken=None, 
     - query är alla aktiva och som synkroneserats senast query_date
     - return resultat dictionary och senast synkroniserad från datumnet
     """
-    return service_device.chromeosdevices().list(customerId="my_customer", query=query, pageToken=nextPageToken, orgUnitPath="Grundskola", maxResults=maxResults).execute(), query
+    return service_device.chromeosdevices().list(customerId="my_customer", query=query, pageToken=nextPageToken, maxResults=maxResults).execute(), query
 
 
 def update_devices(service_device, device_list, update_key, update_value):
@@ -71,7 +71,7 @@ def extract_devices(res, query_key, query_value):
         for i, (k, v) in enumerate(device.items()):
             
             try:
-                print(f'{i} - {k}: {v}')
+                # print(f'{i} - {k}: {v}')
 
                 if k == 'deviceId':
                     deviceId = v
