@@ -76,21 +76,62 @@ def get_devices(service_device, query="status:provisioned", nextPageToken=None, 
     """
     return service_device.chromeosdevices().list(customerId="my_customer", query=query, pageToken=nextPageToken, orgUnitPath="Grundskola", maxResults=maxResults).execute(), query
 
-def check_resurs_id(service_device, resurs_id_list):
+def check_resurs_id(service_device, user_resurs_id_list):
+    """
+    Går igenom resurs_id_list och kollar så att det finns enhet att hämta till varje resurs_id i listan.
+    Skriver ut en checklist för att visa om det saknas någon i listan eller ej.
+    Avbryter programmet om någon enhet saknas.
+
+    resurs_id_list:list [['förnamn.efternamn@edu.hellefors.se','edubookxxx'], ['förnamn.efternamn@edu.hellefors.se','edubookxxx'],... ]
+
+    1. För varje resurs_id i listan -> hämtar enheter med asset_id:edubookxxx
+    2. Instansierar en Device per hämtad enhet
+    3. Device läggs i device_list:
+
+    return device_list:list [Device, Device,... ]
+    """
     nextPageToken = None
     maxResults = 200
     device_list = []
-    for rid in resurs_id_list:
+    for e in user_resurs_id_list:
+        user = e[0]
+        rid = e[1]
+
         query = "asset_id:"+rid
 
         res = service_device.chromeosdevices().list(customerId="my_customer", query=query,
-                                                    pageToken=nextPageToken, orgUnitPath="Grundskola", maxResults=maxResults).execute()
+                                                    pageToken=nextPageToken, maxResults=maxResults).execute()
         d = res.get("chromeosdevices", [])
 
 
         if len(d) == 1:
-            print(f"{rid} - {d[0]['annotatedAssetId']}: {d[0].get('annotatedLocation', 'SAKNAS')}")
+
+            # for k, v in d[0].items():
+            #     print(f"{k}: {v}")
+
+            # RESURS ID
+            if rid.lower() == d[0].get('annotatedAssetId', 'SAKNAS').lower():
+                cprint(f"{rid}[{d[0]['annotatedAssetId']}]", "green")
+            else:
+                cprint(f"{rid}[{d[0]['annotatedAssetId']}]", "red")
+            
+            # PLATS
+            print(
+                F"[orgUnitPath={d[0].get('orgUnitPath', 'SAKNAS')}]:Plats=", end="")
+            if d[0].get('annotatedLocation', 'SAKNAS') != 'SAKNAS':
+                cprint(f"{d[0].get('annotatedLocation', 'SAKNAS')}", "green")
+            else:
+                cprint(f"{d[0].get('annotatedLocation', 'SAKNAS')}", "yellow")
+
+            # USER
+            if user == d[0].get('annotatedUser', 'SAKNAS'):
+                cprint(f"{user}:{d[0].get('annotatedUser', 'SAKNAS')}", 'green')
+            else:
+                cprint(f"{user}:{d[0].get('annotatedUser', 'SAKNAS')}", 'yellow')
+                
+            print()
             d_inst = Device(d[0])
+            d_inst.set_user(user)
             device_list.append(d_inst)
         elif len(d) > 1:
             print("WUUT!")
@@ -103,19 +144,42 @@ def check_resurs_id(service_device, resurs_id_list):
 
 
 def update_devices(service_device, device_list, ny_klass):
+    """
+    För varje Device i device_list:list -> uppdatera 'annotatedLocation' till ny_klass
 
-    body = {
-        'annotatedLocation': ny_klass
-    }
 
-    print(f"update: {body}")
+    """
+    
+    body = dict()
+    # print(f"update: {body}")
 
     print()
 
     for d in device_list:
+        # print(d.get_user())
+        new_user = d.get_user()
+        UPDATE = False
+        body = dict()
+        
         if d.get_value('annotatedLocation') != ny_klass:
-            print(d.get_device_id())
-            print(f"{d.get_value('annotatedAssetId')}: {d.get_value('annotatedLocation')} \t -> \t {ny_klass}")
+            body['annotatedLocation'] = ny_klass
+            
+            # print(f"{d.get_value('annotatedAssetId')}: {d.get_value('annotatedLocation')} \t -> \t {ny_klass}")
+
+            UPDATE = True
+
+        if d.get_value('annotatedUser') != new_user:
+            body['annotatedUser'] = new_user
+            # print(f"{d.get_value('annotatedUser')}: {d.get_value('annotatedUser')} \t -> \t {new_user}")
+            UPDATE = True
+        
+        if UPDATE:
+            print(f"{d.get_device_id()}:{d.get_value('annotatedAssetId')}")
+            print("body: {")
+            for k, v in body.items():
+                print(f"\t {k}: {v}")
+            print("}")
+            print()
             service_device.chromeosdevices().update(customerId="my_customer", deviceId=d.get_device_id(), body=body).execute()
 
 
@@ -138,10 +202,14 @@ def main():
     print(f'error: {error}')
 
     resurs_id_list = cb_df['resurs_id'].tolist()
+    user_list = cb_df['edukonto'].tolist()
 
-    print(resurs_id_list)
+    # print(resurs_id_list)
+    # print(user_list)
 
-    device_list = check_resurs_id(device_service, resurs_id_list)
+    user_resurs_id_list = [list(a) for a in zip(user_list, resurs_id_list)]
+
+    device_list = check_resurs_id(device_service, user_resurs_id_list)
 
     ny_klass = input("Ange ny klass: ")
 
