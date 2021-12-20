@@ -22,7 +22,7 @@ def get_devices(service_device, nextPageToken, maxResults, days_back=2):
     query_date = a.strftime("%Y-%m-%d")
     # query = "user: magnus.andersson@edu.hellefors.se"
     query = "status:provisioned sync:"+query_date+".."
-    return service_device.chromeosdevices().list(customerId="my_customer", query=query, pageToken=nextPageToken, orgUnitPath="Grundskola", maxResults=maxResults).execute(), query
+    return service_device.chromeosdevices().list(customerId="my_customer", query=query, pageToken=nextPageToken, maxResults=maxResults).execute(), query
 
 def extract_devices(res):
     """
