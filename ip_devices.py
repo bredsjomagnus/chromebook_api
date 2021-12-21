@@ -42,6 +42,7 @@ def extract_devices(res):
         recentUser = "SAKNAS"
         wanIp = ""
         lastActivity = 'SAKNAS'
+        orgUnitPath = 'SAKNAS'
 
         for i, (k, v) in enumerate(device.items()):
             try:
@@ -61,6 +62,9 @@ def extract_devices(res):
                 
                 if k == 'annotatedAssetId':
                     resursId = v
+                
+                if k == 'orgUnitPath':
+                    orgUnitPath = v
 
                 if k == 'lastKnownNetwork':
                     if '195.34.84' not in v[0]['wanIpAddress']:
@@ -78,8 +82,9 @@ def extract_devices(res):
             nc = nc + 1
             print()
             print('Resurs-ID: ', end="")
-            cprint(f'{resursId}', 'red', 'on_white')
+            cprint(f'{resursId}', 'yellow', 'on_red')
             cprint(f'Senaste användare: {recentUser}', 'yellow')
+            print(f'OU: {orgUnitPath}')
             print(f'Serienummer: {serialNumber}')
             print(f'Senaste aktivitet: {lastActivity}')
             print(f'Senaste synk: {lastSync}')

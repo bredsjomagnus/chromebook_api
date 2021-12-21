@@ -118,7 +118,7 @@ def extract_devices(res, query_key, query_value):
             print(f"{query_key}: ", end="")
             cprint(f"{search_value}", 'yellow')
             print('Resurs-ID: ', end="")
-            cprint(f'{resursId}', 'red', 'on_white')
+            cprint(f'{resursId}', 'yellow', 'on_red')
             cprint(f'Senaste användare: {recentUser}', 'yellow')
             print(f'Serienummer: {serialNumber}')
             print(f"Plats: {location}")
