@@ -1,4 +1,4 @@
-# TVÅ OLIKA VERKTYG FÖR ATT HANTERA SKOLAN ENHETER
+# TVÅ OLIKA VERKTYG FÖR ATT HANTERA SKOLANS ENHETER
 
 ### ip_devices.py
 Kollar av skolans enheter och plockar fram de som inte befinner sig på skolan så att de kan inaktiveras.
