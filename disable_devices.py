@@ -2,7 +2,7 @@ from __future__ import print_function
 import pickle
 import os.path
 from signal import default_int_handler
-from enable_devices_filter import enable_devices_filter
+from disable_devices_filter import disable_devices_filter
 from Device import Device
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -25,7 +25,7 @@ def get_devices(service_device, nextPageToken, maxResults, status):
     # query_date = a.strftime("%Y-%m-%d")
     # query = "user: magnus.andersson@edu.hellefors.se"
     query = "status:"+status
-    return service_device.chromeosdevices().list(customerId="my_customer", query=query, pageToken=nextPageToken, maxResults=maxResults).execute(), query
+    return service_device.chromeosdevices().list(customerId="my_customer", pageToken=nextPageToken, query=query, maxResults=maxResults).execute()
 
 
 def extract_devices(res):
@@ -51,12 +51,14 @@ def extract_devices(res):
 
         for i, (k, v) in enumerate(device.items()):
             try:
-                for filter_key, filter_value in enable_devices_filter.items():
+                for filter_key, filter_value in disable_devices_filter.items():
                     # print(f'{i} - {k}: {v}')
                     
                     if filter_key == k:
-                       for filter_element in filter_value:
-                            if filter_element in v:
+                        
+                        for filter_element in filter_value:
+                            # print(f'filter_element: {filter_element}, v: {v}')
+                            if filter_element.lower() in v.lower():
                                 # print("orgUnitPath:"+v)
                                 catched = True
 
@@ -65,6 +67,9 @@ def extract_devices(res):
 
                 if k == 'annotatedAssetId':
                     resursId = v
+                    
+                # if k == "status":
+                    # print(v)
 
                 # if k == 'status':
                 #     print(k+":"+v)
@@ -83,6 +88,7 @@ def extract_devices(res):
 
                 if k == 'orgUnitPath':
                     orgUnitPath = v
+                    # print(v)
 
                 # if k == 'lastKnownNetwork':
                 #     if '195.34.84' not in v[0]['wanIpAddress']:
@@ -105,7 +111,7 @@ def extract_devices(res):
             # print(f'orgUnitPath: {orgUnitPath}')
             catched = False
 
-    return device_list
+    return devices, device_list
 
 
 def update_devices(service_device, device_list, status):
@@ -158,9 +164,29 @@ if __name__ == "__main__":
     print("Starting up...")
     print("Device service")
     service_device = get_device_service()
-    res, query = get_devices(service_device, None, 200, "disabled")
-    device_list = extract_devices(res)
-    update_devices(service_device, device_list, "reenable")
+    
+    res = get_devices(service_device, None, 200, "ACTIVE")
+    devices, device_list = extract_devices(res)
+    
+    if len(device_list) > 0:
+        update_devices(service_device, device_list, "disable")
+
+    # print(f'len(device_list): {len(device_list)}')
+    tot_number_of_devices = len(devices)
+    found_number_of_devices = len(device_list)
+    while len(devices) == 200:
+        res = get_devices(service_device, res['nextPageToken'], 200, "ACTIVE")
+        devices, device_list = extract_devices(res)
+        
+        if len(device_list) > 0:
+            update_devices(service_device, device_list, "disable")
+            
+        tot_number_of_devices = tot_number_of_devices + len(devices)
+        found_number_of_devices = found_number_of_devices + len(device_list)
+    
+    
+    
+    
     print()
-    print(f'{len(device_list)} stycken')
+    print(f'{found_number_of_devices}/{tot_number_of_devices} stycken')
     print("Exit! Bye!")
