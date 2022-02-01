@@ -120,7 +120,7 @@ def update_devices(service_device, device_list, status):
         print(d.get_device_id())
         print(
             f"{d.get_value('annotatedAssetId')} \t {status}")
-        response = service_device.chromeosdevices().action(customerId="my_customer", resourceId=d.get_device_id(), body=body).execute()
+        service_device.chromeosdevices().action(customerId="my_customer", resourceId=d.get_device_id(), body=body).execute()
 
 def get_device_service():
     """Shows basic usage of the Admin SDK Directory API.
