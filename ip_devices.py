@@ -7,7 +7,7 @@ from google.auth.transport.requests import Request
 import datetime
 from termcolor import cprint
 
-SCOPES = ["https://www.googleapis.com/auth/admin.directory.device.chromeos.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/admin.directory.device.chromeos"]
 
 
 def get_devices(service_device, nextPageToken, maxResults, days_back=2):
