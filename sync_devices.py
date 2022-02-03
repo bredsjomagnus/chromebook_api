@@ -68,13 +68,13 @@ def get_device_service():
     return service
 
 
-def get_devices(service_device, query="status:provisioned", nextPageToken=None, maxResults=200):
-    """
-    - Hämtar lista med alla enheter som stämmer in på query.
-    - query är alla aktiva och som synkroneserats senast query_date
-    - return resultat dictionary och senast synkroniserad från datumnet
-    """
-    return service_device.chromeosdevices().list(customerId="my_customer", query=query, pageToken=nextPageToken, orgUnitPath="Grundskola", maxResults=maxResults).execute(), query
+# def get_devices(service_device, query="status:provisioned", nextPageToken=None, maxResults=200):
+#     """
+#     - Hämtar lista med alla enheter som stämmer in på query.
+#     - query är alla aktiva och som synkroneserats senast query_date
+#     - return resultat dictionary och senast synkroniserad från datumnet
+#     """
+#     return service_device.chromeosdevices().list(customerId="my_customer", query=query, pageToken=nextPageToken, orgUnitPath="Grundskola", maxResults=maxResults).execute(), query
 
 def check_resurs_id(service_device, user_resurs_id_list):
     """
