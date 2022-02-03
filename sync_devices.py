@@ -68,13 +68,13 @@ def get_device_service():
     return service
 
 
-def get_devices(service_device, query="status:provisioned", nextPageToken=None, maxResults=200):
-    """
-    - Hämtar lista med alla enheter som stämmer in på query.
-    - query är alla aktiva och som synkroneserats senast query_date
-    - return resultat dictionary och senast synkroniserad från datumnet
-    """
-    return service_device.chromeosdevices().list(customerId="my_customer", query=query, pageToken=nextPageToken, orgUnitPath="Grundskola", maxResults=maxResults).execute(), query
+# def get_devices(service_device, query="status:provisioned", nextPageToken=None, maxResults=200):
+#     """
+#     - Hämtar lista med alla enheter som stämmer in på query.
+#     - query är alla aktiva och som synkroneserats senast query_date
+#     - return resultat dictionary och senast synkroniserad från datumnet
+#     """
+#     return service_device.chromeosdevices().list(customerId="my_customer", query=query, pageToken=nextPageToken, orgUnitPath="Grundskola", maxResults=maxResults).execute(), query
 
 def check_resurs_id(service_device, user_resurs_id_list):
     """
@@ -82,6 +82,7 @@ def check_resurs_id(service_device, user_resurs_id_list):
     Skriver ut en checklist för att visa om det saknas någon i listan eller ej.
     Avbryter programmet om någon enhet saknas.
 
+    Hämtat från spreadsheetet Chromebooks:
     resurs_id_list:list [['förnamn.efternamn@edu.hellefors.se','edubookxxx'], ['förnamn.efternamn@edu.hellefors.se','edubookxxx'],... ]
 
     1. För varje resurs_id i listan -> hämtar enheter med asset_id:edubookxxx
@@ -97,48 +98,49 @@ def check_resurs_id(service_device, user_resurs_id_list):
         user = e[0]
         rid = e[1]
 
-        query = "asset_id:"+rid
+        # så länge inte rid är en tom sträng
+        if rid:
+            query = "asset_id:"+rid
+            res = service_device.chromeosdevices().list(customerId="my_customer", query=query,
+                                                        pageToken=nextPageToken, maxResults=maxResults).execute()
+            d = res.get("chromeosdevices", [])
 
-        res = service_device.chromeosdevices().list(customerId="my_customer", query=query,
-                                                    pageToken=nextPageToken, maxResults=maxResults).execute()
-        d = res.get("chromeosdevices", [])
 
+            if len(d) == 1:
 
-        if len(d) == 1:
+                # for k, v in d[0].items():
+                #     print(f"{k}: {v}")
 
-            # for k, v in d[0].items():
-            #     print(f"{k}: {v}")
-
-            # RESURS ID
-            if rid.lower() == d[0].get('annotatedAssetId', 'SAKNAS').lower():
-                cprint(f"{rid}[{d[0]['annotatedAssetId']}]", "green")
-            else:
-                cprint(f"{rid}[{d[0]['annotatedAssetId']}]", "red")
-            
-            # PLATS
-            print(
-                F"[orgUnitPath={d[0].get('orgUnitPath', 'SAKNAS')}]:Plats=", end="")
-            if d[0].get('annotatedLocation', 'SAKNAS') != 'SAKNAS':
-                cprint(f"{d[0].get('annotatedLocation', 'SAKNAS')}", "green")
-            else:
-                cprint(f"{d[0].get('annotatedLocation', 'SAKNAS')}", "yellow")
-
-            # USER
-            if user == d[0].get('annotatedUser', 'SAKNAS'):
-                cprint(f"{user}:{d[0].get('annotatedUser', 'SAKNAS')}", 'green')
-            else:
-                cprint(f"{user}:{d[0].get('annotatedUser', 'SAKNAS')}", 'yellow')
+                # RESURS ID
+                if rid.lower() == d[0].get('annotatedAssetId', 'SAKNAS').lower():
+                    cprint(f"Enhet: {rid}", "green")
+                else:
+                    cprint(
+                        f"Enhet i chromebooks spreadheet: {rid}, Enhet i Google Admin: {d[0]['annotatedAssetId']}", "red")
                 
-            print()
-            d_inst = Device(d[0])
-            d_inst.set_user(user)
-            device_list.append(d_inst)
-        elif len(d) > 1:
-            print("WUUT!")
-            exit()
-        else:
-            print(f"{rid} FINNS INTE")
-            exit()
+                # PLATS
+                print(f"[orgUnitPath={d[0].get('orgUnitPath', 'SAKNAS')}]:Plats=", end="")
+                if d[0].get('annotatedLocation', 'SAKNAS') != 'SAKNAS':
+                    cprint(f"{d[0].get('annotatedLocation', 'SAKNAS')}", "green")
+                else:
+                    cprint(f"{d[0].get('annotatedLocation', 'SAKNAS')}", "yellow")
+
+                # USER
+                if user == d[0].get('annotatedUser', 'SAKNAS') and user:
+                    cprint(f"Användare: {d[0].get('annotatedUser', 'SAKNAS')}", 'green')
+                else:
+                    cprint(f"Användare i chromebooks spreadsheet: {user}, användare i Google Admin: {d[0].get('annotatedUser', 'SAKNAS')}", 'yellow')
+                    
+                print()
+                d_inst = Device(d[0])
+                d_inst.set_user(user)
+                device_list.append(d_inst)
+            elif len(d) > 1:
+                print("WUUT!")
+                exit()
+            else:
+                print(f"{rid} FINNS INTE")
+                exit()
     
     return device_list
 
