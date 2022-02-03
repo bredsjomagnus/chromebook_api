@@ -187,6 +187,15 @@ def main():
     sheet_service = get_sheet_service()
     device_service = get_device_service()
 
+    info_msg = """
+    *******************************************************************
+    HÄMTAR OCH VISAR LISTAN ÖVER CHROMEBOOKLISTAN I DRIVEN. 
+    SEN KAN MAN SKRIVA IN VILKEN KLASS DESSA ENHETER SKALL SÄTTAS TILL I GOOGLE ADMIN.
+    DET SOM SÄTTS ÄR ENBART PLATS OCH INTE OU.
+    *******************************************************************
+    """
+    print(info_msg)
+    print()
     klass = input("Klass: ").strip()
 
     _range = klass+"!C1:D"
@@ -211,7 +220,11 @@ def main():
 
     device_list = check_resurs_id(device_service, user_resurs_id_list)
 
-    ny_klass = input("Ange ny klass: ")
+    ny_klass = input("Ange ny klass (eller quit (q)): ")
+
+    if ny_klass.lower() == 'q':
+        print("Quit! Hej då!")
+        exit()
 
     update_devices(device_service, device_list, ny_klass)
 
