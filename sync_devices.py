@@ -146,8 +146,6 @@ def check_resurs_id(service_device, user_resurs_id_list):
 def update_devices(service_device, device_list, ny_klass):
     """
     För varje Device i device_list:list -> uppdatera 'annotatedLocation' till ny_klass
-
-
     """
     
     body = dict()
@@ -184,6 +182,11 @@ def update_devices(service_device, device_list, ny_klass):
 
 
 def main():
+    """
+    1. Hämtar spreadsheetet Chromebooks och tar ut elevernas edu-adresser och elevernas Edubook-nummer.
+    
+    2. 
+    """
     sheet_service = get_sheet_service()
     device_service = get_device_service()
 
@@ -203,9 +206,6 @@ def main():
 
     resurs_id_list = cb_df['resurs_id'].tolist()
     user_list = cb_df['edukonto'].tolist()
-
-    # print(resurs_id_list)
-    # print(user_list)
 
     user_resurs_id_list = [list(a) for a in zip(user_list, resurs_id_list)]
 
