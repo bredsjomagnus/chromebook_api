@@ -8,3 +8,7 @@ disable_devices_filter = {
 # Edubook018 Lidyas enhet
 # Edubook008 Yasmins enhet
 # Edubook004 Sundus enhet
+
+# Enheter som är ok att de har hemma:
+# Svante Ståhl 7C Edubook262
+# Abukar Maxamed 7B Edubook576 -- syntes senast i Blekinge!?
