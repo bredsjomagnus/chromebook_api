@@ -1,5 +1,5 @@
 disable_devices_filter = {
-    "annotatedAssetId": ["Edubook004", "Edubook008", "Edubook150", "Edubook325", "Edubook296", "Edubook293", "Edubook572", "Edubook390", "Edubook393"]
+    "annotatedAssetId": ["Edubook311", "Edubook004", "Edubook008", "Edubook150", "Edubook325", "Edubook296", "Edubook293", "Edubook572", "Edubook390", "Edubook393"]
 }
 # disable_devices_filter = {
 #     "annotatedAssetId": ["Edubook150", "Edubook325", "Edubook287", "Edubook296", "Edubook008", "Edubook293", "Edubook572", "Edubook390"]
@@ -8,6 +8,7 @@ disable_devices_filter = {
 # Edubook018 Lidyas enhet
 # Edubook008 Yasmins enhet
 # Edubook004 Sundus enhet
+# Edubook311 Chelsea Thudéns enhet
 
 # Enheter som är ok att de har hemma:
 # Svante Ståhl 7C Edubook262
