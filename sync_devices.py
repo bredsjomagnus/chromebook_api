@@ -2,6 +2,7 @@
 from __future__ import print_function
 import pickle
 import os.path
+import os
 from functions import *
 from env import *
 from Device import *
@@ -14,6 +15,16 @@ from termcolor import cprint
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
     "https://www.googleapis.com/auth/admin.directory.device.chromeos"]
+
+
+# def clearConsole():
+#     command = 'clear'
+#     if os.name in ('nt', 'dos'):  # If Machine is running on Windows, use cls
+#         command = 'cls'
+#     os.system(command)
+
+
+def clearConsole(): return print('\n' * 150)
 
 
 def get_sheet_service():
@@ -76,7 +87,7 @@ def get_device_service():
 #     """
 #     return service_device.chromeosdevices().list(customerId="my_customer", query=query, pageToken=nextPageToken, orgUnitPath="Grundskola", maxResults=maxResults).execute(), query
 
-def check_resurs_id(service_device, user_resurs_id_list):
+def check_resurs_id(service_device, user_resurs_id_list, klass):
     """
     Går igenom resurs_id_list och kollar så att det finns enhet att hämta till varje resurs_id i listan.
     Skriver ut en checklist för att visa om det saknas någon i listan eller ej.
@@ -97,48 +108,78 @@ def check_resurs_id(service_device, user_resurs_id_list):
         user = e[0]
         rid = e[1]
 
-        query = "asset_id:"+rid
+        if len(rid) > 0:
 
-        res = service_device.chromeosdevices().list(customerId="my_customer", query=query,
-                                                    pageToken=nextPageToken, maxResults=maxResults).execute()
-        d = res.get("chromeosdevices", [])
+            MISMATCH = False
+            FOUND = False
 
+            query = "asset_id:"+rid
 
-        if len(d) == 1:
-
-            # for k, v in d[0].items():
-            #     print(f"{k}: {v}")
-
-            # RESURS ID
-            if rid.lower() == d[0].get('annotatedAssetId', 'SAKNAS').lower():
-                cprint(f"{rid}[{d[0]['annotatedAssetId']}]", "green")
-            else:
-                cprint(f"{rid}[{d[0]['annotatedAssetId']}]", "red")
+            try:
+                res = service_device.chromeosdevices().list(customerId="my_customer", query=query, pageToken=nextPageToken, maxResults=maxResults).execute()
+                FOUND = True
+            except Exception as e:
+                print(e)
             
-            # PLATS
-            print(
-                F"[orgUnitPath={d[0].get('orgUnitPath', 'SAKNAS')}]:Plats=", end="")
-            if d[0].get('annotatedLocation', 'SAKNAS') != 'SAKNAS':
-                cprint(f"{d[0].get('annotatedLocation', 'SAKNAS')}", "green")
-            else:
-                cprint(f"{d[0].get('annotatedLocation', 'SAKNAS')}", "yellow")
+            d = res.get("chromeosdevices", [])
 
-            # USER
-            if user == d[0].get('annotatedUser', 'SAKNAS'):
-                cprint(f"{user}:{d[0].get('annotatedUser', 'SAKNAS')}", 'green')
-            else:
-                cprint(f"{user}:{d[0].get('annotatedUser', 'SAKNAS')}", 'yellow')
+
+            if len(d) == 1 and FOUND:
+
+                # for k, v in d[0].items():
+                #     print(f"{k}: {v}")
+
+                # RESURS ID
+                if rid.lower() == d[0].get('annotatedAssetId', 'SAKNAS').lower():
+                    cprint(f"{rid}[{d[0]['annotatedAssetId']}]", "green")
+                else:
+                    cprint(f"{rid}[{d[0]['annotatedAssetId']}]", "red")
+                    MISMATCH = True
                 
-            print()
-            d_inst = Device(d[0])
-            d_inst.set_user(user)
-            device_list.append(d_inst)
-        elif len(d) > 1:
-            print("WUUT!")
-            exit()
+                # PLATS
+                print(f"Plats=", end="")
+                unitPlats = d[0].get('annotatedLocation', 'SAKNAS')
+                # if d[0].get('annotatedLocation', 'SAKNAS') != 'SAKNAS':
+                if klass.lower() in unitPlats.lower():
+                    cprint(f"{d[0].get('annotatedLocation', 'SAKNAS')}", "green")
+                else:
+                    cprint(f"{d[0].get('annotatedLocation', 'SAKNAS')}", "yellow")
+                    MISMATCH = True
+
+                # OU
+                print(f"orgUnitPath", end="")
+                unitOU = d[0].get('orgUnitPath', 'SAKNAS')
+                if klass.lower() in unitOU.lower():
+                    cprint(f"{d[0].get('orgUnitPath', 'SAKNAS')}", "green")
+                else:
+                    cprint(f"{d[0].get('orgUnitPath', 'SAKNAS')}", "yellow")
+                    MISMATCH = True
+
+                unitNote = d[0].get('notes', '')
+                if len(unitNote) > 0:
+                    print("notes: ", end="")
+                    cprint(unitNote, "cyan")
+
+                # USER
+                if user == d[0].get('annotatedUser', 'SAKNAS') and not MISMATCH:
+                    cprint(f"{user}:{d[0].get('annotatedUser', 'SAKNAS')}", 'green')
+                else:
+                    cprint(f"{user}:{d[0].get('annotatedUser', 'SAKNAS')}", 'yellow')
+                    
+                print()
+                d_inst = Device(d[0])
+                d_inst.set_user(user)
+                device_list.append(d_inst)
+            elif len(d) > 1:
+                print("WUUT!")
+                exit()
+            else:
+                print(f"{rid} FINNS INTE")
+                exit()
+
         else:
-            print(f"{rid} FINNS INTE")
-            exit()
+            cprint(f"{user} saknar enhet", "red")
+            print()
     
     return device_list
 
@@ -189,28 +230,46 @@ def main():
     """
     sheet_service = get_sheet_service()
     device_service = get_device_service()
+    MSG ="""    
+Steg 1 skannar av.
+Eleverna är hämtas från Chromebook spreadheet klass som anges.
+De som elever som har enhet ligger i annat OU eller har annan plats inskriven markers med gult.
+"""
+    print(MSG)
 
-    klass = input("Klass: ").strip()
+    newclass = 'j'
+    while newclass == 'j':
+        klass = input("Klass [hämtar denna klassen från dess Chromebookblad]: ").strip()
 
-    _range = klass+"!C1:D"
+        _range = klass+"!C1:D"
 
-    col_map = {
-        'Edukonto': 'edukonto',
-        'Enhet': 'resurs_id'
-    }
+        col_map = {
+            'Edukonto': 'edukonto',
+            'Enhet': 'resurs_id'
+        }
 
-    cb_df, error = get_sheet_as_df(sheet_service, CHROMEBOOKS_ID, _range, col_map)
+        cb_df, error = get_sheet_as_df(sheet_service, CHROMEBOOKS_ID, _range, col_map)
 
-    # print(cb_df)
-    print(f'error: {error}')
+        # print(cb_df)
+        print(f'error: {error}')
 
-    resurs_id_list = cb_df['resurs_id'].tolist()
-    user_list = cb_df['edukonto'].tolist()
+        resurs_id_list = cb_df['resurs_id'].tolist()
+        user_list = cb_df['edukonto'].tolist()
 
-    user_resurs_id_list = [list(a) for a in zip(user_list, resurs_id_list)]
+        user_resurs_id_list = [list(a) for a in zip(user_list, resurs_id_list)]
 
-    device_list = check_resurs_id(device_service, user_resurs_id_list)
+        
+        device_list = check_resurs_id(device_service, user_resurs_id_list, klass)
 
+        newclass = input("Vill du kolla en annan klass? [j] ")
+        # clearConsole()
+    
+    _exit = input("Vill du fortsätta med att lägga till ny klass? [j] ")
+
+    if _exit != 'j':
+        print()
+        print("Hej då!")
+        exit()
     ny_klass = input("Ange ny klass: ")
 
     update_devices(device_service, device_list, ny_klass)
