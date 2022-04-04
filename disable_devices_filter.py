@@ -13,3 +13,6 @@ disable_devices_filter = {
 # Enheter som är ok att de har hemma:
 # Svante Ståhl 7C Edubook262
 # Abukar Maxamed 7B Edubook576 -- syntes senast i Blekinge!?
+# Edubook287 Faezas enhet pga NP
+# Edubook284 Ella Mattsson pga NP
+# Edubook151 Moa Nordberg pga NP
