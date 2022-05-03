@@ -17,9 +17,9 @@ disable_devices_filter = {
 # Edubook284 Ella Mattsson pga NP
 # Edubook151 Moa Nordberg pga NP
 
-# Dispans fram till 13/5
-# Edubook416 Wilma Wickström 8C (13/5)
-# Edubook134 Wilma Gustafsson 8C (13/5)
-# Edubook106 Elvira Östlund 8C (13/5)
-# Edubook383 Lowis Hermansson 8C (13/5)
-# Edubook427 Märta Olsson 8C (13/5) 
+# Dispans fram till 19/5
+# Edubook416 Wilma Wickström 8C (19/5)
+# Edubook134 Wilma Gustafsson 8C (19/5)
+# Edubook106 Elvira Östlund 8C (19/5)
+# Edubook383 Lowis Hermansson 8C (19/5)
+# Edubook427 Märta Olsson 8C (19/5) 
