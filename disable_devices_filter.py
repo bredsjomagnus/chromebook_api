@@ -26,5 +26,6 @@ disable_devices_filter = {
 # Edubook280 Suhayla Abdihamid 8C (19/5) 
 # Edubook107 Khadra Ahmed Abdelrashid 8C (19/5) 
 # Edubook428 Muna Siraj Ahmed 8C (19/5)
+# Edubook434 Hussein Khadum 8D (19/5)
 
 # Edubook304 Malva Palmqvist 9A (Tills sommarprat inlämnat)
